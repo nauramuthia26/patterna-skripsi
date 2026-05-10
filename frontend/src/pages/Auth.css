@@ -1,0 +1,109 @@
+.auth-page { min-height: calc(100vh - var(--nav-height)); display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.auth-card { width: 100%; max-width: 420px; }
+.auth-logo { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: var(--primary); margin-bottom: 28px; }
+.auth-title { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 6px; }
+.auth-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 13px; font-weight: 600; }
+.form-group input { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg-main); transition: border-color 0.18s; width: 100%; color: var(--text-primary); }
+.form-group input:focus { border-color: var(--primary); background: var(--bg-white); }
+.input-pw { position: relative; }
+.input-pw input { padding-right: 44px; }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; color: var(--text-muted); border: none; cursor: pointer; display: flex; align-items: center; }
+.pw-toggle:hover { color: var(--text-primary); }
+.auth-submit { width: 100%; padding: 13px; font-size: 15px; margin-top: 4px; }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.auth-switch { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 20px; }
+.auth-switch a { color: var(--primary); font-weight: 600; }
+.auth-switch a:hover { text-decoration: underline; }
+
+/* Field error */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #EF4444;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.field-error svg { flex-shrink: 0; }
+
+/* Input error state */
+.form-group input.input-error {
+  border-color: #EF4444;
+  background: #FFF5F5;
+}
+
+.form-group input.input-error:focus {
+  border-color: #EF4444;
+  background: #FFF5F5;
+}
+
+/* ── Role Selector (Register) ─────────────────────── */
+.role-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.role-option:hover {
+  border-color: var(--primary);
+  background: var(--primary-light, #f0f4ff);
+}
+
+.role-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light, #f0f4ff);
+}
+
+.role-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.role-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Role Badge (Profil) ──────────────────────────── */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.role-badge-umum {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.role-badge-konveksi {
+  background: #FFF7ED;
+  color: #EA580C;
+}

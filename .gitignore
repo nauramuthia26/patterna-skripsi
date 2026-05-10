@@ -1,0 +1,21 @@
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/api/__pycache__/
+backend/app/core/__pycache__/
+backend/app/models/__pycache__/
+backend/app/schemas/__pycache__/
+backend/app/services/__pycache__/
+backend/uploads/
+backend/patterna.db
+backend/.env
+backend/models/*.keras
+backend/models/*.h5
+
+# Frontend
+frontend/node_modules/
+
+# Python cache semua folder
+**/__pycache__/
+**/*.pyc
