@@ -4,7 +4,7 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./patterna.db"
-    SECRET_KEY: str = "patterna-secret-key-ganti-ini"
+    SECRET_KEY: str = "patterna-skripsi-naura26"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     UPLOAD_DIR: str = "uploads"

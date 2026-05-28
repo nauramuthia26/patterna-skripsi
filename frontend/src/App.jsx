@@ -6,7 +6,7 @@ import Deteksi from './pages/Deteksi'
 import { Login, Register, Profil } from './pages/Auth'
 import Riwayat from './pages/Riwayat'
 import Ensiklopedia from './pages/Ensiklopedia'
-import { Panduan } from './pages/Placeholders'
+import Panduan from './pages/Panduan'
 import { useAuthStore } from './store/authStore'
 
 export default function App() {

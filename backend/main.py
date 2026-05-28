@@ -10,11 +10,7 @@ from app.api.classify import router as classify_router
 from app.api.data import history_router, fabric_router
 
 settings = get_settings()
-
-# Buat semua tabel otomatis
 Base.metadata.create_all(bind=engine)
-
-# Buat folder upload
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 app = FastAPI(
@@ -25,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,9 +35,29 @@ app.include_router(history_router, prefix="/api")
 app.include_router(fabric_router, prefix="/api")
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Load model ke memori saat server start agar request pertama tidak lambat."""
+    from app.services.model_service import get_active_model_name, load_model, preprocess_for_efficientnet
+    import numpy as np
+
+    model_name = get_active_model_name()
+    if model_name != "dummy":
+        print(f"[Startup] Memuat model '{model_name}'...")
+        model = load_model(model_name)
+        if model:
+            # Warm up — jalankan prediksi dummy sekali
+            # agar TensorFlow siap dan request pertama tidak kena cold start
+            dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+            model.predict(dummy, verbose=0)
+            print("[Startup] ✅ Model siap, warm-up selesai")
+    else:
+        print("[Startup] ⚠️ Mode dummy aktif, tidak ada model yang dimuat")
+
+
 @app.get("/")
 def root():
-    return {"message": "PATTERNA API v1.0 — SQLite", "docs": "/docs"}
+    return {"message": "PATTERNA API v1.0", "docs": "/docs"}
 
 
 @app.get("/api/health")

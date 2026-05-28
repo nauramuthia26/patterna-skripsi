@@ -34,6 +34,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+body {
+  padding-top: var(--nav-height);
+}
+
 a { text-decoration: none; color: inherit; }
 button { font-family: var(--font); cursor: pointer; border: none; outline: none; }
 input, textarea { font-family: var(--font); outline: none; }
@@ -97,3 +101,4 @@ input, textarea { font-family: var(--font); outline: none; }
   .container { padding: 0 16px; }
   .card { padding: 20px 16px; }
 }
+

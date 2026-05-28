@@ -19,7 +19,7 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    const h = () => { if (window.innerWidth > 640) setMobileOpen(false) }
+    const h = () => { if (window.innerWidth > 768) setMobileOpen(false) }
     window.addEventListener('resize', h)
     return () => window.removeEventListener('resize', h)
   }, [])
@@ -45,17 +45,25 @@ export default function Navbar() {
         <div className="navbar-inner">     
 
          {/* Logo */}
-         <NavLink to="/" className="navbar-logo" onClick={() => setMobileOpen(false)}>
+         <NavLink 
+            to="/" 
+            className="navbar-logo" 
+            onClick={() => {
+              etMobileOpen(false)
+              window.dispatchEvent(new Event('reset-deteksi'))
+              nav('/')
+            }}
+          >
             <img
               src={logoImg}
               alt="PATTERNA"
-              style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
+              style={{ height: '58px', width: 'auto', objectFit: 'contain' }}
             />
             <span style={{ 
               fontFamily: "'Fredoka', sans-serif",
               fontWeight: 600, 
-              fontSize: '1.4rem', 
-              letterSpacing: '0.1em',
+              fontSize: '1.2rem', 
+              letterSpacing: '0.06em',
               color: '#1a3a5c' 
             }}>
               PATTERNA
@@ -74,7 +82,7 @@ export default function Navbar() {
           </div>
 
           {/* Auth + Hamburger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <div className="navbar-auth">
               {token && user ? (
                 <div className="user-menu" ref={dropRef}>

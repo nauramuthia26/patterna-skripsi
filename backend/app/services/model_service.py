@@ -246,9 +246,9 @@ def classify_image(image_bytes: bytes) -> Tuple[str, float, str]:
         raise ValueError(f"Model '{model_name}' gagal dimuat. Cek file .keras")
 
     # ── Filter tekstur sebelum prediksi ──────────────────
-    is_fabric, reason = is_fabric_image(image_bytes)
-    if not is_fabric:
-        raise ValueError(f"Bukan gambar kain: {reason}")
+    # is_fabric, reason = is_fabric_image(image_bytes)
+    # if not is_fabric:
+       # raise ValueError(f"Bukan gambar kain: {reason}")
     # ─────────────────────────────────────────────────────
 
     try:
@@ -262,3 +262,15 @@ def classify_image(image_bytes: bytes) -> Tuple[str, float, str]:
     except Exception as e:
         print(f"[ModelService] ❌ Error prediksi: {e}")
         raise
+
+def preload_model():
+    """Panggil saat startup — load model ke memori sekaligus warm up."""
+    model_name = get_active_model_name()
+    if model_name == "dummy":
+        return
+    model = load_model(model_name)
+    if model:
+        import numpy as np
+        dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+        model.predict(dummy, verbose=0)
+        print(f"[ModelService] ✅ Warm-up selesai, model siap digunakan")

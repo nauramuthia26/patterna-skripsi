@@ -61,6 +61,10 @@ function KainCard({ baik, buruk, extra, autoExpand }) {
   const [expanded, setExpanded] = useState(autoExpand || false)
   const color = CATEGORY_COLOR[baik.category] || CATEGORY_COLOR.Katun
 
+  useEffect(() => {
+    if (autoExpand) setExpanded(true)
+  }, [autoExpand])
+
   const karakteristik = (() => { try { return JSON.parse(baik.karakteristik || '[]') } catch { return [] } })()
   const penggunaan = (() => { try { return JSON.parse(baik.penggunaan_umum || '[]') } catch { return [] } })()
 

@@ -2,8 +2,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import get_settings
+import os
 
 settings = get_settings()
+
+print("CURRENT DIR:", os.getcwd())
+print("DATABASE URL:", settings.DATABASE_URL)
+print("ABS DB PATH:", os.path.abspath("patterna.db"))
 
 # SQLite butuh connect_args, PostgreSQL tidak
 if settings.DATABASE_URL.startswith("sqlite"):
