@@ -49,7 +49,7 @@ export default function Navbar() {
             to="/" 
             className="navbar-logo" 
             onClick={() => {
-              etMobileOpen(false)
+              setMobileOpen(false)
               window.dispatchEvent(new Event('reset-deteksi'))
               nav('/')
             }}

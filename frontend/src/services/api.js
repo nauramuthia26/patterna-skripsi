@@ -1,7 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
-const api = axios.create({ baseURL: '/api', timeout: 30000 })
+const api = axios.create({ 
+  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`, 
+  timeout: 30000 
+})
 
 // Attach token ke setiap request
 api.interceptors.request.use((config) => {
