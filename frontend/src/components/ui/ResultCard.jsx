@@ -11,13 +11,28 @@ const CLASS_DISPLAY = {
   rayon_baik: 'Rayon Baik', rayon_buruk: 'Rayon Buruk',
 }
 
-// Mapping class_label → kategori untuk link ke ensiklopedia
 const CLASS_TO_CATEGORY = {
   katun_baik: 'Katun', katun_buruk: 'Katun',
   poli_baik: 'Poliester', poli_buruk: 'Poliester',
   linen_baik: 'Linen', linen_buruk: 'Linen',
   polikatun_baik: 'Polikatun', polikatun_buruk: 'Polikatun',
   rayon_baik: 'Rayon', rayon_buruk: 'Rayon',
+}
+
+function getConfidenceLevel(conf) {
+  if (conf >= 85) return 'tinggi'
+  if (conf >= 70) return 'cukup'
+  return 'batas minimum'
+}
+
+function getInterpretation(name, quality, conf) {
+  const level = getConfidenceLevel(conf)
+
+  if (quality === 'Baik') {
+    return `Sistem mengindikasikan gambar ini sebagai ${name} dengan tingkat keyakinan ${level}. Kain ini terindikasi memiliki kualitas baik sehingga cenderung lebih layak digunakan untuk kebutuhan sehari-hari. Namun, keputusan akhir tetap perlu mempertimbangkan pemeriksaan langsung seperti ketebalan, elastisitas, kenyamanan, dan kondisi fisik kain.`
+  }
+
+  return `Sistem mengindikasikan gambar ini sebagai ${name} dengan tingkat keyakinan ${level}. Kain ini terindikasi memiliki kualitas rendah, sehingga perlu diperiksa kembali sebelum digunakan, terutama untuk kebutuhan jangka panjang atau produk yang membutuhkan kenyamanan tinggi. Perhatikan kondisi serat, ketebalan, kenyamanan, dan kondisi fisik kain secara langsung.`
 }
 
 export default function ResultCard({ result, imageUrl }) {
@@ -32,6 +47,7 @@ export default function ResultCard({ result, imageUrl }) {
     || (result.predicted_class.includes('_baik') ? 'Baik' : 'Buruk')
 
   const conf = Math.round(result.confidence * 100)
+  const interpretation = getInterpretation(displayName, quality, conf)
 
   const karakteristik = (() => {
     try { return JSON.parse(result.fabric_info?.karakteristik || '[]') } catch { return [] }
@@ -41,7 +57,7 @@ export default function ResultCard({ result, imageUrl }) {
 
   const goToEnsiklopedia = () => {
     if (kategori) {
-      navigate(`/ensiklopedia?kategori=${kategori}`)
+      navigate(`/ensiklopedia?kategori=${encodeURIComponent(kategori)}&target=perbandingan`)
     } else {
       navigate('/ensiklopedia')
     }
@@ -49,33 +65,40 @@ export default function ResultCard({ result, imageUrl }) {
 
   return (
     <div className="result-card card">
-      {/* Header */}
       <div className="result-header">
         <h2 className="result-label">Hasil Analisis Terakhir</h2>
         {imageUrl && <img src={imageUrl} alt="analyzed" className="result-thumb" />}
       </div>
 
-      {/* Nama & confidence */}
       <div className="result-main">
         <h3 className="result-name">{displayName}</h3>
+
         <span className={`badge ${quality === 'Baik' ? 'badge-green' : 'badge-orange'}`}>
           {quality === 'Baik' ? 'Premium' : 'Low Quality'}
         </span>
+
         <p className="conf-text">Confidence: <strong>{conf}%</strong></p>
+
         <div className="conf-bar">
-          <div className="conf-fill" style={{
-            width: `${conf}%`,
-            background: conf >= 80 ? '#4CAF7D' : conf >= 60 ? '#F08030' : '#EF4444'
-          }} />
+          <div
+            className="conf-fill"
+            style={{
+              width: `${conf}%`,
+              background: conf >= 80 ? '#4CAF7D' : conf >= 60 ? '#F08030' : '#EF4444',
+            }}
+          />
         </div>
       </div>
 
-      {/* Deskripsi */}
+      <div className="result-interpretation">
+        <h4>Interpretasi Hasil</h4>
+        <p>{interpretation}</p>
+      </div>
+
       {result.fabric_info?.deskripsi && (
         <p className="result-desc">{result.fabric_info.deskripsi}</p>
       )}
 
-      {/* Toggle karakteristik */}
       {karakteristik.length > 0 && (
         <>
           <button
@@ -101,10 +124,9 @@ export default function ResultCard({ result, imageUrl }) {
         </>
       )}
 
-      {/* Tombol ke Ensiklopedia */}
       <div className="result-ensiklo-link">
         <button className="btn-ensiklo" onClick={goToEnsiklopedia}>
-          <span>Lihat info lengkap di Ensiklopedia</span>
+          <span>Lihat penjelasan lengkap di Ensiklopedia</span>
           <ArrowRight size={15} />
         </button>
       </div>

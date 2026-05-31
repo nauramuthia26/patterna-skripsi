@@ -27,37 +27,81 @@ const FABRIC_IMAGES = {
 const CATEGORY_ORDER = ['Katun', 'Poliester', 'Linen', 'Polikatun', 'Rayon']
 
 const CATEGORY_COLOR = {
-  Katun:     { bg: '#EBF0FD', text: '#3B6FE8', dot: '#3B6FE8' },
-  Poliester: { bg: '#FEF3E8', text: '#F08030', dot: '#F08030' },
-  Linen:     { bg: '#E8F5EE', text: '#4CAF7D', dot: '#4CAF7D' },
-  Polikatun: { bg: '#F3EEFE', text: '#8B5CF6', dot: '#8B5CF6' },
-  Rayon:     { bg: '#FEF0F0', text: '#EF4444', dot: '#EF4444' },
+  Katun:     { bg: '#EBF0FD', text: '#3B6FE8', dot: '#3B6FE8', light: '#F5F8FF' },
+  Poliester: { bg: '#FEF3E8', text: '#F08030', dot: '#F08030', light: '#FFFAF5' },
+  Linen:     { bg: '#E8F5EE', text: '#4CAF7D', dot: '#4CAF7D', light: '#F4FBF7' },
+  Polikatun: { bg: '#F3EEFE', text: '#8B5CF6', dot: '#8B5CF6', light: '#FAF7FF' },
+  Rayon:     { bg: '#FEF0F0', text: '#EF4444', dot: '#EF4444', light: '#FFF7F7' },
 }
 
-const EXTRA_INFO = {
-  Katun: {
-    kelebihan: ['Nyaman dipakai sepanjang hari', 'Ramah lingkungan', 'Cocok untuk kulit sensitif', 'Mudah dicuci'],
-    kekurangan: ['Mudah kusut', 'Mudah menyusut jika dicuci air panas', 'Rentan terhadap jamur jika lembab'],
-  },
-  Poliester: {
-    kelebihan: ['Tahan lama dan kuat', 'Cepat kering', 'Tidak mudah kusut', 'Harga terjangkau'],
-    kekurangan: ['Kurang menyerap keringat', 'Terasa panas di cuaca terik', 'Tidak ramah lingkungan'],
-  },
-  Linen: {
-    kelebihan: ['Sangat kuat dan tahan lama', 'Menyerap kelembaban baik', 'Makin halus setelah dicuci', 'Ramah lingkungan'],
-    kekurangan: ['Mudah kusut', 'Harga relatif mahal', 'Perlu perawatan khusus'],
-  },
-  Polikatun: {
-    kelebihan: ['Kombinasi kenyamanan katun dan ketahanan poliester', 'Tidak mudah kusut', 'Harga lebih terjangkau dari katun murni'],
-    kekurangan: ['Kurang menyerap keringat dibanding katun 100%', 'Kualitas tergantung rasio campuran'],
-  },
-  Rayon: {
-    kelebihan: ['Sangat lembut dan ringan', 'Jatuh mengikuti bentuk tubuh', 'Menyerap keringat baik', 'Tampilan elegan'],
-    kekurangan: ['Mudah rusak jika salah cuci', 'Cenderung menyusut', 'Kurang tahan lama dibanding serat alami'],
-  },
+function parseJSON(str, fallback = []) {
+  if (!str) return fallback
+  try { return JSON.parse(str) } catch { return fallback }
 }
 
-function KainCard({ baik, buruk, extra, autoExpand }) {
+function PerawatanCard({ item }) {
+  return (
+    <div className="perawatan-item">
+      <span className="perawatan-icon">{item.icon}</span>
+      <div>
+        <p className="perawatan-judul">{item.judul}</p>
+        <p className="perawatan-tips">{item.tips}</p>
+      </div>
+    </div>
+  )
+}
+
+function KualitasBlock({ fabric, imgSrc, altText }) {
+  const isGood = fabric.quality === 'Baik'
+  const karakteristik = parseJSON(fabric.karakteristik)
+
+  return (
+    <div className={`kualitas-block ${isGood ? 'good' : 'bad'}`}>
+      {imgSrc && (
+        <div className="kualitas-img-wrap">
+          <img src={imgSrc} alt={altText} className="kualitas-img" />
+          <div className={`kualitas-img-overlay ${isGood ? 'overlay-good' : 'overlay-bad'}`}>
+            <span className="kualitas-img-badge">
+              {isGood ? '✓ Kualitas Baik' : '✗ Kualitas Rendah'}
+            </span>
+          </div>
+        </div>
+      )}
+      <div className="kualitas-body">
+        {karakteristik.length > 0 && (
+          <div className="kualitas-alasan">
+            <p className="kualitas-alasan-title">
+              {isGood ? '🔬 Ciri kualitas baik' : '⚠️ Ciri kualitas rendah'}
+            </p>
+            <ul>
+              {karakteristik.map((c, i) => (
+                <li key={i}>
+                  <span className={isGood ? 'mark-good' : 'mark-bad'}>
+                    {isGood ? '✓' : '✗'}
+                  </span>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {fabric.saran_pakai && (
+          <div className={`saran-box ${isGood ? 'saran-good' : 'saran-bad'}`}>
+            <p className="saran-label">
+              {isGood ? '💡 Saran penggunaan' : '⚡ Perlu diketahui'}
+            </p>
+            <p className="saran-text">{fabric.saran_pakai}</p>
+            <span className={`rekomendasi-badge ${isGood ? 'rek-yes' : 'rek-no'}`}>
+              {isGood ? '👍 Direkomendasikan' : '👎 Kurang disarankan'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function KainCard({ baik, buruk, autoExpand }) {
   const [expanded, setExpanded] = useState(autoExpand || false)
   const color = CATEGORY_COLOR[baik.category] || CATEGORY_COLOR.Katun
 
@@ -65,21 +109,28 @@ function KainCard({ baik, buruk, extra, autoExpand }) {
     if (autoExpand) setExpanded(true)
   }, [autoExpand])
 
-  const karakteristik = (() => { try { return JSON.parse(baik.karakteristik || '[]') } catch { return [] } })()
-  const penggunaan = (() => { try { return JSON.parse(baik.penggunaan_umum || '[]') } catch { return [] } })()
+  const penggunaan    = parseJSON(baik.penggunaan_umum)
+  const kelebihan     = parseJSON(baik.kelebihan)
+  const kekurangan    = parseJSON(baik.kekurangan)
+  const tipsPerawatan = parseJSON(baik.tips_perawatan)
 
-  const imgBaik = FABRIC_IMAGES[baik.class_label]
+  const imgBaik  = FABRIC_IMAGES[baik.class_label]
   const imgBuruk = buruk ? FABRIC_IMAGES[buruk.class_label] : null
-  const burukKarakter = (() => { try { return JSON.parse(buruk?.karakteristik || '[]') } catch { return [] } })()
 
   return (
     <div className="kain-card" id={`kain-${baik.category.toLowerCase()}`}>
-      {/* Header */}
-      <div className="kain-header" onClick={() => setExpanded(p => !p)}>
+      <div
+        className="kain-header"
+        onClick={() => setExpanded(p => !p)}
+        style={{ borderLeft: `4px solid ${color.dot}` }}
+      >
         <div className="kain-header-left">
           <div className="kain-dot" style={{ background: color.dot }} />
           <div>
-            <h2 className="kain-name">{baik.category}</h2>
+            <div className="kain-name-row">
+              <h2 className="kain-name">{baik.category}</h2>
+              {baik.tagline && <span className="kain-tagline">— {baik.tagline}</span>}
+            </div>
             <p className="kain-sub">Kain {baik.category}</p>
           </div>
         </div>
@@ -93,110 +144,90 @@ function KainCard({ baik, buruk, extra, autoExpand }) {
         </div>
       </div>
 
-      {/* Preview collapsed */}
       {!expanded && (
         <div className="kain-preview">
-          <p className="kain-desc-short">{baik.deskripsi}</p>
-          <button className="btn-lihat" onClick={() => setExpanded(true)}>
+          {baik.cocok_untuk && (
+            <p className="kain-cocok-preview">
+              <span className="cocok-label" style={{ color: color.text }}>Cocok untuk</span>
+              {' '}{baik.cocok_untuk}
+            </p>
+          )}
+          <button className="btn-lihat" style={{ color: color.text }} onClick={() => setExpanded(true)}>
             Lihat Selengkapnya →
           </button>
         </div>
       )}
 
-      {/* Detail expanded */}
       {expanded && (
         <div className="kain-detail fade-in">
 
-          {/* Deskripsi */}
-          <section className="detail-section">
-            <h3 className="section-title">📋 Deskripsi</h3>
-            <p className="section-text">{baik.deskripsi}</p>
-          </section>
-
-          {/* Karakteristik */}
-          {karakteristik.length > 0 && (
-            <section className="detail-section">
-              <h3 className="section-title">🔍 Karakteristik Kain Berkualitas Baik</h3>
-              <ul className="char-list">
-                {karakteristik.map((c, i) => (
-                  <li key={i}><span className="char-dot" style={{ background: color.dot }} />{c}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* Kelebihan & Kekurangan */}
-          <section className="detail-section">
-            <h3 className="section-title">⚖️ Kelebihan & Kekurangan</h3>
-            <div className="pros-cons">
-              <div className="pros">
-                <h4>✅ Kelebihan</h4>
-                <ul>{(extra?.kelebihan || []).map((k, i) => <li key={i}>{k}</li>)}</ul>
+          {/* ① Ringkasan */}
+          <section className="detail-section section-ringkasan" style={{ background: color.light }}>
+            <div className="ringkasan-content">
+              <div className="ringkasan-left">
+                <span className="ringkasan-label" style={{ color: color.text }}>Tentang {baik.category}</span>
+                <p className="ringkasan-desc">{baik.deskripsi}</p>
               </div>
-              <div className="cons">
-                <h4>❌ Kekurangan</h4>
-                <ul>{(extra?.kekurangan || []).map((k, i) => <li key={i}>{k}</li>)}</ul>
-              </div>
+              {baik.cocok_untuk && (
+                <div className="ringkasan-right" style={{ borderColor: color.dot + '40', background: 'white' }}>
+                  <p className="cocok-label-inline" style={{ color: color.text }}>👤 Cocok untuk siapa?</p>
+                  <p className="cocok-text">{baik.cocok_untuk}</p>
+                </div>
+              )}
             </div>
-          </section>
-
-          {/* Penggunaan */}
-          {penggunaan.length > 0 && (
-            <section className="detail-section">
-              <h3 className="section-title">👗 Penggunaan Umum</h3>
-              <div className="tag-list">
+            {penggunaan.length > 0 && (
+              <div className="tag-list" style={{ marginTop: 14 }}>
                 {penggunaan.map((u, i) => (
                   <span key={i} className="tag" style={{ background: color.bg, color: color.text }}>{u}</span>
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
-          {/* Cara Perawatan */}
-          {baik.cara_perawatan && (
+          {/* ② Kelebihan & Kekurangan */}
+          {(kelebihan.length > 0 || kekurangan.length > 0) && (
             <section className="detail-section">
-              <h3 className="section-title">🧺 Cara Perawatan</h3>
-              <p className="section-text">{baik.cara_perawatan}</p>
-            </section>
-          )}
-
-          {/* Perbandingan Baik vs Buruk dengan gambar */}
-          {buruk && (
-            <section className="detail-section">
-              <h3 className="section-title">🔄 Perbandingan Kualitas Baik vs Buruk</h3>
-              <div className="compare-table">
-                {/* Kolom Baik */}
-                <div className="compare-col good">
-                  <div className="compare-header">
-                    <span className="badge-good">✓ Kualitas Baik</span>
-                  </div>
-                  {imgBaik && (
-                    <div className="compare-img-wrap">
-                      <img src={imgBaik} alt={`${baik.category} baik`} className="compare-img" />
-                    </div>
-                  )}
-                  <ul>
-                    {karakteristik.map((c, i) => <li key={i}>{c}</li>)}
-                  </ul>
+              <h3 className="section-title">⚖️ Kelebihan & Kekurangan Kain {baik.category}</h3>
+              <p className="section-note">Ini adalah sifat dasar jenis kain ini — terlepas dari kualitas baik atau buruknya.</p>
+              <div className="pros-cons">
+                <div className="pros">
+                  <h4>✅ Kelebihan</h4>
+                  <ul>{kelebihan.map((k, i) => <li key={i}>{k}</li>)}</ul>
                 </div>
-
-                {/* Kolom Buruk */}
-                <div className="compare-col bad">
-                  <div className="compare-header">
-                    <span className="badge-bad">✗ Kualitas Buruk</span>
-                  </div>
-                  {imgBuruk && (
-                    <div className="compare-img-wrap">
-                      <img src={imgBuruk} alt={`${baik.category} buruk`} className="compare-img" />
-                    </div>
-                  )}
-                  <ul>
-                    {burukKarakter.map((c, i) => <li key={i}>{c}</li>)}
-                  </ul>
+                <div className="cons">
+                  <h4>❌ Kekurangan</h4>
+                  <ul>{kekurangan.map((k, i) => <li key={i}>{k}</li>)}</ul>
                 </div>
               </div>
             </section>
           )}
+
+          {/* ③ Perbandingan Kualitas */}
+          {buruk && (
+            <section
+              id={`perbandingan-${baik.category.toLowerCase()}`}
+              className="detail-section"
+            >
+              <h3 className="section-title">🔄 Perbandingan Kualitas: Baik vs Rendah</h3>
+              <p className="section-note">Lihat perbedaan visual dan kenapa satu lebih baik dari yang lain.</p>
+              <div className="kualitas-compare">
+                <KualitasBlock fabric={baik}  imgSrc={imgBaik}  altText={`${baik.category} baik`} />
+                <KualitasBlock fabric={buruk} imgSrc={imgBuruk} altText={`${baik.category} buruk`} />
+              </div>
+            </section>
+          )}
+
+          {/* ④ Cara Perawatan */}
+          {tipsPerawatan.length > 0 && (
+            <section className="detail-section">
+              <h3 className="section-title">🧺 Cara Perawatan Kain {baik.category}</h3>
+              <p className="section-note">Tips merawat kain ini agar tetap awet dan nyaman dipakai.</p>
+              <div className="perawatan-grid">
+                {tipsPerawatan.map((p, i) => <PerawatanCard key={i} item={p} />)}
+              </div>
+            </section>
+          )}
+
         </div>
       )}
     </div>
@@ -217,28 +248,31 @@ export default function Ensiklopedia() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Auto scroll & expand jika ada query ?kategori=Katun
   const targetCategory = searchParams.get('kategori')
 
   useEffect(() => {
     if (targetCategory && !loading) {
       setActiveCategory(targetCategory)
       setTimeout(() => {
-        const el = document.getElementById(`kain-${targetCategory.toLowerCase()}`)
+        const target = searchParams.get('target')
+        const id = target === 'perbandingan'
+          ? `perbandingan-${targetCategory.toLowerCase()}`
+          : `kain-${targetCategory.toLowerCase()}`
+        const el = document.getElementById(id)
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 300)
+      }, 500)
     }
-  }, [targetCategory, loading])
+  }, [targetCategory, loading, searchParams])
 
   const grouped = CATEGORY_ORDER.reduce((acc, cat) => {
-    const baik = fabrics.find(f => f.category === cat && f.quality === 'Baik')
+    const baik  = fabrics.find(f => f.category === cat && f.quality === 'Baik')
     const buruk = fabrics.find(f => f.category === cat && f.quality === 'Buruk')
     if (baik) acc[cat] = { baik, buruk }
     return acc
   }, {})
 
   const filtered = Object.entries(grouped).filter(([cat]) => {
-    const matchCat = activeCategory === 'Semua' || activeCategory === cat
+    const matchCat    = activeCategory === 'Semua' || activeCategory === cat
     const matchSearch = cat.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
@@ -251,7 +285,7 @@ export default function Ensiklopedia() {
             <BookOpen size={28} style={{ color: 'var(--primary)' }} />
             <div>
               <h1 className="ensiklo-title">Ensiklopedia Kain</h1>
-              <p className="ensiklo-sub">Panduan lengkap 5 jenis kain beserta karakteristik, kelebihan, kekurangan, dan cara perawatan</p>
+              <p className="ensiklo-sub">Panduan lengkap memahami jenis kain, cara membedakan kualitas, dan tips perawatannya</p>
             </div>
           </div>
           <div className="ensiklo-search">
@@ -290,7 +324,6 @@ export default function Ensiklopedia() {
                 key={cat}
                 baik={baik}
                 buruk={buruk}
-                extra={EXTRA_INFO[cat]}
                 autoExpand={targetCategory === cat}
               />
             ))}

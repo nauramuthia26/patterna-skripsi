@@ -5,18 +5,27 @@ from app.core.database import Base
 
 
 class FabricType(Base):
-    __tablename__ = "jenis_kain"          
+    __tablename__ = "jenis_kain"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     category = Column(String(50), nullable=False)
     quality = Column(String(10), nullable=False)
     class_label = Column(String(100), nullable=False, unique=True)
-    deskripsi = Column(Text)              
-    karakteristik = Column(Text)         
-    penggunaan_umum = Column(Text)        
-    cara_perawatan = Column(Text)         
+    deskripsi = Column(Text)
+    karakteristik = Column(Text)
+    penggunaan_umum = Column(Text)
+    cara_perawatan = Column(Text)
     image_url = Column(String(255))
+
+    # Kolom baru
+    tagline = Column(Text)
+    cocok_untuk = Column(Text)
+    kelebihan = Column(Text)        # JSON array string
+    kekurangan = Column(Text)       # JSON array string
+    saran_pakai = Column(Text)
+    tips_perawatan = Column(Text)   # JSON array of {icon, judul, tips}
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -36,7 +45,7 @@ class ActiveModel(Base):
 
 
 class ClassificationHistory(Base):
-    __tablename__ = "riwayat_klasifikasi"  # ← diubah
+    __tablename__ = "riwayat_klasifikasi"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

@@ -105,19 +105,37 @@ export default function Riwayat() {
               const name = h.fabric_type?.name || CLASS_DISPLAY[h.predicted_class] || h.predicted_class
               const quality = h.predicted_class?.includes('_baik') ? 'Baik' : 'Buruk'
               const conf = h.confidence ? Math.round(h.confidence * 100) : '-'
+              const imageUrl = h.image_url || (h.image_filename ? `/uploads/${h.image_filename}` : null)
+              
               return (
                 <div className="riwayat-item" key={h.id}>
-                  <div className="riwayat-info">
-                    <p className="riwayat-name">{name}</p>
-                    <p className="riwayat-meta">
-                      {h.image_filename} &nbsp;·&nbsp; {fmt(h.created_at)}
-                      {h.category === 'konveksi' && (
-                        <span className="badge badge-blue" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px' }}>
-                          Konveksi
-                        </span>
-                      )}
-                    </p>
+                  <div className="riwayat-left">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={name}
+                        className="riwayat-thumb"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div className="riwayat-thumb-placeholder">?</div>
+                    )}
+            
+                    <div className="riwayat-info">
+                      <p className="riwayat-name">{name}</p>
+                      <p className="riwayat-meta">
+                        {h.image_filename} &nbsp;·&nbsp; {fmt(h.created_at)}
+                        {h.category === 'konveksi' && (
+                          <span className="badge badge-blue" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px' }}>
+                            Konveksi
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
+            
                   <div className="riwayat-right">
                     <span className={`badge ${quality === 'Baik' ? 'badge-green' : 'badge-orange'}`}>
                       {quality === 'Baik' ? 'Premium' : 'Low Quality'}

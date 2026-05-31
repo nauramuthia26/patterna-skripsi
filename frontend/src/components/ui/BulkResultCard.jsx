@@ -29,11 +29,29 @@ const CATEGORY_FROM_CLASS = {
   rayon_buruk: 'Rayon',
 }
 
+function getConfidenceLevel(conf) {
+  if (conf >= 85) return 'tinggi'
+  if (conf >= 70) return 'cukup'
+  return 'batas minimum'
+}
+
+function getInterpretation(name, quality, conf) {
+  const level = getConfidenceLevel(conf)
+
+  if (quality === 'Baik') {
+    return `Sistem mengindikasikan gambar ini sebagai ${name} dengan tingkat keyakinan ${level}. Kain ini terindikasi memiliki kualitas baik sehingga cenderung lebih layak digunakan untuk kebutuhan sehari-hari. Namun, keputusan akhir tetap perlu mempertimbangkan pemeriksaan langsung seperti ketebalan, elastisitas, kenyamanan, dan kondisi fisik kain.`
+  }
+
+  return `Sistem mengindikasikan gambar ini sebagai ${name} dengan tingkat keyakinan ${level}. Kain ini terindikasi memiliki kualitas rendah, sehingga perlu diperiksa kembali sebelum digunakan, terutama untuk kebutuhan jangka panjang atau produk yang membutuhkan kenyamanan tinggi. Perhatikan kondisi serat, ketebalan, kenyamanan, dan kondisi fisik kain secara langsung.`
+}
+
 function DetailModal({ item, preview, onClose }) {
   const navigate = useNavigate()
 
   const name = item.fabric_info?.name || CLASS_DISPLAY[item.predicted_class] || item.predicted_class
   const conf = Math.round(item.confidence * 100)
+  const quality = item.quality || (item.predicted_class?.includes('_baik') ? 'Baik' : 'Buruk')
+  const interpretation = getInterpretation(name, quality, conf)
 
   const chars = (() => {
     try {
@@ -50,7 +68,7 @@ function DetailModal({ item, preview, onClose }) {
 
   const goToEnsiklopedia = () => {
     onClose()
-    navigate(`/ensiklopedia?kategori=${encodeURIComponent(category)}`)
+    navigate(`/ensiklopedia?kategori=${encodeURIComponent(category)}&target=perbandingan`)
   }
 
   return (
@@ -66,8 +84,8 @@ function DetailModal({ item, preview, onClose }) {
           <div>
             <h2 className="modal-name">{name}</h2>
 
-            <span className={`badge ${item.quality === 'Baik' ? 'badge-green' : 'badge-orange'}`}>
-              {item.quality === 'Baik' ? 'Premium' : 'Low Quality'}
+            <span className={`badge ${quality === 'Baik' ? 'badge-green' : 'badge-orange'}`}>
+              {quality === 'Baik' ? 'Premium' : 'Low Quality'}
             </span>
 
             <p className="modal-conf">
@@ -85,6 +103,11 @@ function DetailModal({ item, preview, onClose }) {
               />
             </div>
           </div>
+        </div>
+
+        <div className="modal-interpretation">
+          <h4>Interpretasi Hasil</h4>
+          <p>{interpretation}</p>
         </div>
 
         {item.fabric_info?.deskripsi && (
@@ -106,7 +129,7 @@ function DetailModal({ item, preview, onClose }) {
         )}
 
         <button className="btn-ensiklo modal-ensiklo-btn" onClick={goToEnsiklopedia}>
-          Lihat info lengkap di Ensiklopedia
+          Lihat penjelasan lengkap di Ensiklopedia
           <ExternalLink size={15} />
         </button>
 
@@ -150,7 +173,6 @@ export default function BulkResultCard({ data, previews }) {
 
   return (
     <div className="bulk-card card">
-      {/* Summary stats */}
       <div className="bulk-stats">
         {[
           { val: data.total, label: 'Kain Terdeteksi', cls: '' },
@@ -181,7 +203,6 @@ export default function BulkResultCard({ data, previews }) {
         )}
       </div>
 
-      {/* Gambar ditolak */}
       {rejectedCount > 0 && (
         <div className="rejected-section">
           <button
@@ -231,7 +252,6 @@ export default function BulkResultCard({ data, previews }) {
         </div>
       )}
 
-      {/* Hasil yang berhasil */}
       {data.total > 0 ? (
         <>
           <div className="bulk-list-header">

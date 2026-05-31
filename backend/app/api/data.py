@@ -18,12 +18,30 @@ def get_my_history(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return (
+    records = (
         db.query(ClassificationHistory)
         .filter(ClassificationHistory.user_id == current_user.id)
         .order_by(ClassificationHistory.created_at.desc())
-        .offset(skip).limit(limit).all()
+        .offset(skip)
+        .limit(limit)
+        .all()
     )
+
+    return [
+        {
+            "id": h.id,
+            "image_filename": h.image_filename,
+            "image_url": f"/uploads/{h.image_filename}" if h.image_filename else None,
+            "predicted_class": h.predicted_class,
+            "confidence": h.confidence,
+            "category": h.category,
+            "batch_id": h.batch_id,
+            "model_used": h.model_used,
+            "created_at": h.created_at,
+            "fabric_type": h.fabric_type,
+        }
+        for h in records
+    ]
 
 
 @history_router.delete("/{history_id}")

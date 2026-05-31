@@ -1,17 +1,182 @@
-.riwayat-page, .placeholder-page { padding: 40px 0 80px; min-height: calc(100vh - var(--nav-height)); }
-.page-loading { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--nav-height)); color: var(--primary); }
-.riwayat-header { margin-bottom: 24px; }
-.riwayat-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.3px; }
-.riwayat-header p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-.riwayat-empty { text-align: center; padding: 60px; display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--text-muted); }
-.riwayat-list { padding: 0; overflow: hidden; }
-.riwayat-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border-light); transition: background 0.15s; }
-.riwayat-item:last-child { border-bottom: none; }
-.riwayat-item:hover { background: var(--bg-main); }
-.riwayat-info { flex: 1; }
-.riwayat-name { font-size: 15px; font-weight: 600; }
-.riwayat-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.riwayat-right { display: flex; align-items: center; gap: 12px; }
-.conf-pct { font-size: 13px; font-weight: 600; color: var(--text-secondary); min-width: 36px; text-align: right; }
-.del-btn { color: var(--text-muted); padding: 6px; border-radius: var(--radius-sm); }
-.del-btn:hover { color: #EF4444; background: #FEF2F2; }
+.riwayat-page,
+.placeholder-page {
+  padding: 40px 0 80px;
+  min-height: calc(100vh - var(--nav-height));
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--nav-height));
+  color: var(--primary);
+}
+
+.riwayat-header {
+  margin-bottom: 24px;
+}
+
+.riwayat-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.riwayat-header p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.riwayat-empty {
+  text-align: center;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.riwayat-list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.riwayat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s;
+}
+
+.riwayat-item:last-child {
+  border-bottom: none;
+}
+
+.riwayat-item:hover {
+  background: var(--bg-main);
+}
+
+.riwayat-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.riwayat-thumb,
+.riwayat-thumb-placeholder {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.riwayat-thumb {
+  object-fit: cover;
+  border: 1px solid var(--border-light);
+  background: var(--bg-main);
+}
+
+.riwayat-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-main);
+  color: var(--text-muted);
+  font-weight: 700;
+  border: 1px solid var(--border-light);
+}
+
+.riwayat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.riwayat-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.riwayat-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riwayat-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.conf-pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
+.del-btn {
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+}
+
+.del-btn:hover {
+  color: #EF4444;
+  background: #FEF2F2;
+}
+
+@media (max-width: 640px) {
+  .riwayat-page,
+  .placeholder-page {
+    padding: 24px 0 60px;
+  }
+
+  .riwayat-empty {
+    padding: 40px 24px;
+  }
+
+  .riwayat-item {
+    align-items: flex-start;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .riwayat-left {
+    gap: 10px;
+  }
+
+  .riwayat-thumb,
+  .riwayat-thumb-placeholder {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+  }
+
+  .riwayat-right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .riwayat-name {
+    font-size: 14px;
+  }
+
+  .riwayat-meta {
+    font-size: 11px;
+    max-width: 180px;
+  }
+}

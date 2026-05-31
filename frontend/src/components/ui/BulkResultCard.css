@@ -347,3 +347,27 @@
   margin-bottom: 14px;
   width: 100%;
 }
+
+.modal-interpretation {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+}
+
+.modal-interpretation h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.modal-interpretation p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  font-family: var(--font);
+}

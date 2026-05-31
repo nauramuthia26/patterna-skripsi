@@ -7,7 +7,7 @@ class RegisterRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: str = "umum"  # ← tambah: "umum" atau "konveksi"
+    role: str = "umum"
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -17,7 +17,7 @@ class UserOut(BaseModel):
     id: int
     name: str
     email: str
-    role: str          # ← sudah ada, pastikan terkirim ke frontend
+    role: str
     created_at: datetime
     class Config:
         from_attributes = True
@@ -38,6 +38,13 @@ class FabricTypeOut(BaseModel):
     penggunaan_umum: Optional[str] = None
     cara_perawatan: Optional[str] = None
     image_url: Optional[str] = None
+    # Kolom baru
+    tagline: Optional[str] = None
+    cocok_untuk: Optional[str] = None
+    kelebihan: Optional[str] = None        # JSON string, di-parse di frontend
+    kekurangan: Optional[str] = None       # JSON string, di-parse di frontend
+    saran_pakai: Optional[str] = None
+    tips_perawatan: Optional[str] = None   # JSON string, di-parse di frontend
     class Config:
         from_attributes = True
 
@@ -64,6 +71,7 @@ class BulkClassificationResult(BaseModel):
 class HistoryOut(BaseModel):
     id: int
     image_filename: Optional[str] = None
+    image_url: Optional[str] = None
     predicted_class: Optional[str] = None
     confidence: Optional[float] = None
     category: Optional[str] = None
