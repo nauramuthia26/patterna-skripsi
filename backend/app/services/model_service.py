@@ -263,6 +263,38 @@ def classify_image(image_bytes: bytes) -> Tuple[str, float, str]:
         print(f"[ModelService] ❌ Error prediksi: {e}")
         raise
 
+def classify_images_batch(images_bytes: list[bytes]):
+    model_name = get_active_model_name()
+
+    if model_name == "dummy":
+        raise ValueError("Tidak ada model yang tersedia di folder models/")
+
+    model = load_model(model_name)
+    if model is None:
+        raise ValueError(f"Model '{model_name}' gagal dimuat. Cek file .keras")
+
+    preprocess_fn = PREPROCESS_FN.get(model_name, preprocess_for_efficientnet)
+
+    arrays = []
+    for image_bytes in images_bytes:
+        img_array = preprocess_fn(image_bytes)[0]
+        arrays.append(img_array)
+
+    batch_array = np.stack(arrays, axis=0)
+
+    predictions = model.predict(batch_array, verbose=0)
+
+    results = []
+    for pred in predictions:
+        idx = int(np.argmax(pred))
+        results.append({
+            "predicted_class": CLASS_LABELS[idx],
+            "confidence": float(pred[idx]),
+            "model_used": model_name
+        })
+
+    return results
+
 def preload_model():
     """Panggil saat startup — load model ke memori sekaligus warm up."""
     model_name = get_active_model_name()

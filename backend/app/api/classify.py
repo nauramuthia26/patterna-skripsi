@@ -10,7 +10,7 @@ from app.core.security import get_current_user_optional, get_konveksi_user
 from app.core.config import get_settings
 from app.models.fabric import ClassificationHistory, FabricType
 from app.schemas.schemas import ClassificationResult, BulkClassificationResult
-from app.services.model_service import classify_image, get_active_model_name
+from app.services.model_service import classify_image, classify_images_batch, get_active_model_name
 
 router = APIRouter(prefix="/classify", tags=["Classification"])
 settings = get_settings()
@@ -143,35 +143,24 @@ async def classify_konveksi(
     current_user=Depends(get_konveksi_user),
 ):
     if not files:
-        raise HTTPException(
-            400,
-            "Minimal 1 gambar harus diupload"
-        )
+        raise HTTPException(400, "Minimal 1 gambar harus diupload")
 
-    if len(files) > 50:
-        raise HTTPException(
-            400,
-            "Maksimal 50 gambar per batch"
-        )
+    if len(files) > 10:
+        raise HTTPException(400, "Maksimal 10 gambar per batch")
 
     active = get_active_model_name()
 
     if active == "dummy":
-        raise HTTPException(
-            503,
-            "Model klasifikasi belum tersedia."
-        )
+        raise HTTPException(503, "Model klasifikasi belum tersedia.")
 
     batch_id = uuid.uuid4().hex
 
-    results = []
+    valid_items = []
     rejected = []
 
     for i, file in enumerate(files):
-
         img_label = file.filename or f"Gambar {i + 1}"
 
-        # Validasi format
         if file.content_type not in ALLOWED_TYPES:
             rejected.append({
                 "index": i,
@@ -183,14 +172,19 @@ async def classify_konveksi(
         try:
             filename, path, contents = await save_upload(file)
 
-            predicted_class, confidence, model_used = classify_image(contents)
+            valid_items.append({
+                "index": i,
+                "filename_original": img_label,
+                "filename": filename,
+                "path": path,
+                "contents": contents
+            })
 
-        except ValueError as e:
-            # Error validasi dari model_service
+        except HTTPException as e:
             rejected.append({
                 "index": i,
                 "filename": img_label,
-                "reason": str(e)
+                "reason": str(e.detail)
             })
             continue
 
@@ -198,14 +192,41 @@ async def classify_konveksi(
             rejected.append({
                 "index": i,
                 "filename": img_label,
-                "reason": "Gagal memproses gambar"
+                "reason": "Gagal membaca atau menyimpan gambar"
             })
             continue
 
+    if not valid_items:
+        return BulkClassificationResult(
+            batch_id=batch_id,
+            total=0,
+            results=[],
+            rejected=rejected,
+            rejected_count=len(rejected),
+        )
+
+    try:
+        batch_predictions = classify_images_batch(
+            [item["contents"] for item in valid_items]
+        )
+
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+    except Exception as e:
+        raise HTTPException(500, f"Gagal memproses batch gambar: {str(e)}")
+
+    results = []
+
+    for item, pred in zip(valid_items, batch_predictions):
+        predicted_class = pred["predicted_class"]
+        confidence = pred["confidence"]
+        model_used = pred["model_used"]
+
         if confidence < CONFIDENCE_THRESHOLD:
             rejected.append({
-                "index": i,
-                "filename": img_label,
+                "index": item["index"],
+                "filename": item["filename_original"],
                 "reason": (
                     f"Tidak dikenali sebagai kain "
                     f"(confidence: {round(confidence * 100)}%)"
@@ -221,8 +242,8 @@ async def classify_konveksi(
 
         h = ClassificationHistory(
             user_id=current_user.id,
-            image_filename=filename,
-            image_path=path,
+            image_filename=item["filename"],
+            image_path=item["path"],
             predicted_class=predicted_class,
             fabric_type_id=fabric.id if fabric else None,
             confidence=confidence,
