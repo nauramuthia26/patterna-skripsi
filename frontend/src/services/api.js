@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore'
 
 const api = axios.create({ 
   baseURL: `${import.meta.env.VITE_API_URL || ''}/api`, 
-  timeout: 30000 
+  timeout: 120000 
 })
 
 // Attach token ke setiap request

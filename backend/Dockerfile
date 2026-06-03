@@ -2,7 +2,6 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Tambahan ini penting untuk TensorFlow di slim image
 RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
@@ -15,3 +14,5 @@ COPY . .
 EXPOSE 7860
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+
+

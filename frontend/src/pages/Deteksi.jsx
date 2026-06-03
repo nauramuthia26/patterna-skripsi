@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Users, Factory, Upload, X, AlertCircle, CheckCircle2,
-         Loader2, AlertTriangle, Camera, Lock } from 'lucide-react'
+import {
+  Users, Factory, Upload, X, AlertCircle, CheckCircle2,
+  Loader2, AlertTriangle, Camera, Lock
+} from 'lucide-react'
 import { classifyAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
@@ -15,6 +17,7 @@ export default function Deteksi() {
   const navigate = useNavigate()
 
   const autoCategory = !token ? 'umum' : (user?.role === 'konveksi' ? 'konveksi' : 'umum')
+  const MAX_FILES = 10
 
   const [files, setFiles] = useState([])
   const [previews, setPreviews] = useState([])
@@ -35,6 +38,21 @@ export default function Deteksi() {
     setCameraOpen(false)
   }
 
+  useEffect(() => {
+    const saved = sessionStorage.getItem('deteksi_result')
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setResult(parsed.result || null)
+        setBulkResult(parsed.bulkResult || null)
+        setError(parsed.error || null)
+      } catch {
+        sessionStorage.removeItem('deteksi_result')
+      }
+    }
+  }, [])
+
   const reset = useCallback(() => {
     closeCamera()
 
@@ -48,6 +66,7 @@ export default function Deteksi() {
     setBulkResult(null)
     setError(null)
     setLoading(false)
+    sessionStorage.removeItem('deteksi_result')
   }, [previews])
 
   useEffect(() => {
@@ -68,7 +87,11 @@ export default function Deteksi() {
 
   const onDrop = useCallback((accepted) => {
     if (!accepted?.length) return
+
     setError(null)
+    setResult(null)
+    setBulkResult(null)
+    sessionStorage.removeItem('deteksi_result')
 
     if (autoCategory === 'umum') {
       previews.forEach(url => {
@@ -77,13 +100,9 @@ export default function Deteksi() {
 
       setFiles([accepted[0]])
       setPreviews([URL.createObjectURL(accepted[0])])
-      setResult(null)
-      setBulkResult(null)
     } else {
-      setFiles(p => [...p, ...accepted].slice(0, 50))
-      setPreviews(p => [...p, ...accepted.map(f => URL.createObjectURL(f))].slice(0, 50))
-      setResult(null)
-      setBulkResult(null)
+      setFiles(p => [...p, ...accepted].slice(0, MAX_FILES))
+      setPreviews(p => [...p, ...accepted.map(f => URL.createObjectURL(f))].slice(0, MAX_FILES))
     }
   }, [autoCategory, previews])
 
@@ -91,7 +110,7 @@ export default function Deteksi() {
     onDrop,
     accept: { 'image/jpeg': [], 'image/png': [], 'image/webp': [] },
     multiple: autoCategory === 'konveksi',
-    maxFiles: autoCategory === 'konveksi' ? 50 : 1,
+    maxFiles: autoCategory === 'konveksi' ? MAX_FILES : 1,
   })
 
   const removeFile = (idx) => {
@@ -102,6 +121,7 @@ export default function Deteksi() {
     setResult(null)
     setBulkResult(null)
     setError(null)
+    sessionStorage.removeItem('deteksi_result')
   }
 
   const openCamera = async () => {
@@ -131,6 +151,9 @@ export default function Deteksi() {
       const url = URL.createObjectURL(blob)
 
       setError(null)
+      setResult(null)
+      setBulkResult(null)
+      sessionStorage.removeItem('deteksi_result')
 
       if (autoCategory === 'umum') {
         previews.forEach(prevUrl => {
@@ -139,13 +162,9 @@ export default function Deteksi() {
 
         setFiles([file])
         setPreviews([url])
-        setResult(null)
-        setBulkResult(null)
       } else {
-        setFiles(p => [...p, file].slice(0, 50))
-        setPreviews(p => [...p, url].slice(0, 50))
-        setResult(null)
-        setBulkResult(null)
+        setFiles(p => [...p, file].slice(0, MAX_FILES))
+        setPreviews(p => [...p, url].slice(0, MAX_FILES))
       }
 
       closeCamera()
@@ -169,21 +188,47 @@ export default function Deteksi() {
         const res = await classifyAPI.umum(files[0])
         setResult(res.data)
 
+        sessionStorage.setItem('deteksi_result', JSON.stringify({
+          result: res.data,
+          bulkResult: null,
+          error: null
+        }))
+
         if (!token) {
           toast('💡 Login untuk menyimpan riwayat', { duration: 3000 })
         }
       } else {
         const res = await classifyAPI.konveksi(files)
         setBulkResult(res.data)
+
+        sessionStorage.setItem('deteksi_result', JSON.stringify({
+          result: null,
+          bulkResult: res.data,
+          error: null
+        }))
       }
     } catch (err) {
       const status = err.response?.status
       const msg = err.response?.data?.detail || 'Gagal memproses gambar'
 
       if (status === 422) {
-        setError({ type: 'low_confidence', message: msg })
+        const errObj = { type: 'low_confidence', message: msg }
+        setError(errObj)
+
+        sessionStorage.setItem('deteksi_result', JSON.stringify({
+          result: null,
+          bulkResult: null,
+          error: errObj
+        }))
       } else if (status === 503) {
-        setError({ type: 'no_model', message: msg })
+        const errObj = { type: 'no_model', message: msg }
+        setError(errObj)
+
+        sessionStorage.setItem('deteksi_result', JSON.stringify({
+          result: null,
+          bulkResult: null,
+          error: errObj
+        }))
       } else if (status === 401 || status === 403) {
         toast.error(msg)
       } else {
@@ -245,7 +290,7 @@ export default function Deteksi() {
                 </p>
                 <p className="dz-sub">
                   atau <span className="dz-browse">pilih file</span>
-                  &nbsp;·&nbsp; {autoCategory === 'konveksi' ? 'Maks 50 gambar' : '1 gambar'}
+                  &nbsp;·&nbsp; {autoCategory === 'konveksi' ? `Maks ${MAX_FILES} gambar` : '1 gambar'}
                 </p>
               </div>
             )}
@@ -296,14 +341,14 @@ export default function Deteksi() {
           <div className="upload-actions">
             {!token && (
               <div className="guest-notice">
-              <p>
-                <AlertCircle size={13} /> Gunakan perangkat mobile untuk pengalaman kamera yang lebih baik
-              </p>
-            
-              <p>
-                <AlertCircle size={13} /> Login untuk menyimpan riwayat
-              </p>
-            </div>
+                <p>
+                  <AlertCircle size={13} /> Gunakan perangkat mobile untuk pengalaman kamera yang lebih baik
+                </p>
+
+                <p>
+                  <AlertCircle size={13} /> Login untuk menyimpan riwayat
+                </p>
+              </div>
             )}
 
             {(files.length > 0 || result || bulkResult || error) && (

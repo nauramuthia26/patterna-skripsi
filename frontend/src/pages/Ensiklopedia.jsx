@@ -242,12 +242,21 @@ export default function Ensiklopedia() {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
+    const cached = sessionStorage.getItem('fabrics')
+    if (cached) {
+      setFabrics(JSON.parse(cached))
+      setLoading(false)
+      return
+    }
     fabricAPI.getAll()
-      .then(res => setFabrics(res.data))
+      .then(res => {
+        setFabrics(res.data)
+        sessionStorage.setItem('fabrics', JSON.stringify(res.data))
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
-
+  
   const targetCategory = searchParams.get('kategori')
 
   useEffect(() => {
