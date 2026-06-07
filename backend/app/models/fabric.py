@@ -52,6 +52,7 @@ class ClassificationHistory(Base):
     session_id = Column(String(100))
     image_filename = Column(String(255))
     image_path = Column(String(255))
+    image_url = Column(String(500))
     predicted_class = Column(String(100))
     fabric_type_id = Column(Integer, ForeignKey("jenis_kain.id", ondelete="SET NULL"), nullable=True)
     confidence = Column(Float)

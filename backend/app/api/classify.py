@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.models.fabric import ClassificationHistory, FabricType
 from app.schemas.schemas import ClassificationResult, BulkClassificationResult
 from app.services.model_service import classify_image, classify_images_batch, get_active_model_name
+from supabase import create_client
 
 router = APIRouter(prefix="/classify", tags=["Classification"])
 settings = get_settings()
@@ -19,41 +20,57 @@ ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 CONFIDENCE_THRESHOLD = 0.60
 
 
-async def save_upload(file: UploadFile) -> tuple:
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+def get_supabase():
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if not url or not key:
+        return None
+    return create_client(url, key)
 
+
+async def save_upload(file: UploadFile) -> tuple:
     ext = os.path.splitext(file.filename or "img.jpg")[1] or ".jpg"
     filename = f"{uuid.uuid4().hex}{ext}"
-    path = os.path.join(settings.UPLOAD_DIR, filename)
 
     contents = await file.read()
 
     if len(contents) > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
-        raise HTTPException(
-            400,
-            f"Ukuran file maksimal {settings.MAX_UPLOAD_SIZE_MB}MB"
-        )
+        raise HTTPException(400, f"Ukuran file maksimal {settings.MAX_UPLOAD_SIZE_MB}MB")
 
-    async with aiofiles.open(path, "wb") as f:
-        await f.write(contents)
+    supabase = get_supabase()
+    image_url = None
 
-    return filename, path, contents
+    if supabase:
+        try:
+            content_type = file.content_type or "image/jpeg"
+            supabase.storage.from_("uploads").upload(
+                path=filename,
+                file=contents,
+                file_options={"content-type": content_type}
+            )
+            image_url = f"{os.environ.get('SUPABASE_URL')}/storage/v1/object/public/uploads/{filename}"
+        except Exception as e:
+            print(f"[Storage] Gagal upload ke Supabase: {e}")
+
+    if not image_url:
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        path = os.path.join(settings.UPLOAD_DIR, filename)
+        async with aiofiles.open(path, "wb") as f:
+            await f.write(contents)
+        image_url = None
+
+    return filename, image_url, contents
 
 
 @router.get("/status")
 def model_status():
     model_name = get_active_model_name()
-
     return {
         "model_active": model_name,
         "is_dummy": model_name == "dummy",
         "ready": model_name != "dummy",
     }
 
-
-# ──────────────────────────────────────────────────────────
-# UMUM — boleh tanpa login
-# ──────────────────────────────────────────────────────────
 
 @router.post("/umum", response_model=ClassificationResult)
 async def classify_umum(
@@ -62,31 +79,19 @@ async def classify_umum(
     current_user=Depends(get_current_user_optional),
 ):
     if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            400,
-            "Format gambar harus JPEG, PNG, atau WebP"
-        )
+        raise HTTPException(400, "Format gambar harus JPEG, PNG, atau WebP")
 
-    filename, path, contents = await save_upload(file)
+    filename, image_url, contents = await save_upload(file)
 
     try:
         predicted_class, confidence, model_used = classify_image(contents)
-
     except ValueError as e:
-        # Error validasi dari model_service
         raise HTTPException(422, str(e))
-
     except Exception as e:
-        raise HTTPException(
-            500,
-            f"Gagal memproses gambar: {str(e)}"
-        )
+        raise HTTPException(500, f"Gagal memproses gambar: {str(e)}")
 
     if model_used == "dummy":
-        raise HTTPException(
-            503,
-            "Model klasifikasi belum tersedia."
-        )
+        raise HTTPException(503, "Model klasifikasi belum tersedia.")
 
     if confidence < CONFIDENCE_THRESHOLD:
         raise HTTPException(
@@ -95,7 +100,7 @@ async def classify_umum(
             f"(confidence: {round(confidence * 100)}%). "
             f"Pastikan foto merupakan close-up tekstur kain dengan pencahayaan yang cukup."
         )
-    
+
     fabric = (
         db.query(FabricType)
         .filter(FabricType.class_label == predicted_class)
@@ -108,18 +113,16 @@ async def classify_umum(
         h = ClassificationHistory(
             user_id=current_user.id,
             image_filename=filename,
-            image_path=path,
+            image_url=image_url,
             predicted_class=predicted_class,
             fabric_type_id=fabric.id if fabric else None,
             confidence=confidence,
             model_used=model_used,
             category="umum",
         )
-
         db.add(h)
         db.commit()
         db.refresh(h)
-
         history_id = h.id
 
     return ClassificationResult(
@@ -132,10 +135,6 @@ async def classify_umum(
     )
 
 
-# ──────────────────────────────────────────────────────────
-# KONVEKSI — wajib login + role konveksi
-# ──────────────────────────────────────────────────────────
-
 @router.post("/konveksi", response_model=BulkClassificationResult)
 async def classify_konveksi(
     files: List[UploadFile] = File(...),
@@ -144,17 +143,14 @@ async def classify_konveksi(
 ):
     if not files:
         raise HTTPException(400, "Minimal 1 gambar harus diupload")
-
     if len(files) > 10:
         raise HTTPException(400, "Maksimal 10 gambar per batch")
 
     active = get_active_model_name()
-
     if active == "dummy":
         raise HTTPException(503, "Model klasifikasi belum tersedia.")
 
     batch_id = uuid.uuid4().hex
-
     valid_items = []
     rejected = []
 
@@ -162,57 +158,30 @@ async def classify_konveksi(
         img_label = file.filename or f"Gambar {i + 1}"
 
         if file.content_type not in ALLOWED_TYPES:
-            rejected.append({
-                "index": i,
-                "filename": img_label,
-                "reason": "Format file tidak didukung (harus JPG/PNG/WebP)"
-            })
+            rejected.append({"index": i, "filename": img_label, "reason": "Format file tidak didukung (harus JPG/PNG/WebP)"})
             continue
 
         try:
-            filename, path, contents = await save_upload(file)
-
+            filename, image_url, contents = await save_upload(file)
             valid_items.append({
                 "index": i,
                 "filename_original": img_label,
                 "filename": filename,
-                "path": path,
+                "image_url": image_url,
                 "contents": contents
             })
-
         except HTTPException as e:
-            rejected.append({
-                "index": i,
-                "filename": img_label,
-                "reason": str(e.detail)
-            })
-            continue
-
+            rejected.append({"index": i, "filename": img_label, "reason": str(e.detail)})
         except Exception:
-            rejected.append({
-                "index": i,
-                "filename": img_label,
-                "reason": "Gagal membaca atau menyimpan gambar"
-            })
-            continue
+            rejected.append({"index": i, "filename": img_label, "reason": "Gagal membaca atau menyimpan gambar"})
 
     if not valid_items:
-        return BulkClassificationResult(
-            batch_id=batch_id,
-            total=0,
-            results=[],
-            rejected=rejected,
-            rejected_count=len(rejected),
-        )
+        return BulkClassificationResult(batch_id=batch_id, total=0, results=[], rejected=rejected, rejected_count=len(rejected))
 
     try:
-        batch_predictions = classify_images_batch(
-            [item["contents"] for item in valid_items]
-        )
-
+        batch_predictions = classify_images_batch([item["contents"] for item in valid_items])
     except ValueError as e:
         raise HTTPException(422, str(e))
-
     except Exception as e:
         raise HTTPException(500, f"Gagal memproses batch gambar: {str(e)}")
 
@@ -227,10 +196,7 @@ async def classify_konveksi(
             rejected.append({
                 "index": item["index"],
                 "filename": item["filename_original"],
-                "reason": (
-                    f"Tidak dikenali sebagai kain "
-                    f"(confidence: {round(confidence * 100)}%)"
-                )
+                "reason": f"Tidak dikenali sebagai kain (confidence: {round(confidence * 100)}%)"
             })
             continue
 
@@ -243,7 +209,7 @@ async def classify_konveksi(
         h = ClassificationHistory(
             user_id=current_user.id,
             image_filename=item["filename"],
-            image_path=item["path"],
+            image_url=item["image_url"],
             predicted_class=predicted_class,
             fabric_type_id=fabric.id if fabric else None,
             confidence=confidence,
@@ -251,26 +217,17 @@ async def classify_konveksi(
             category="konveksi",
             batch_id=batch_id,
         )
-
         db.add(h)
         db.commit()
         db.refresh(h)
 
-        results.append(
-            ClassificationResult(
-                predicted_class=predicted_class,
-                confidence=confidence,
-                quality="Baik" if "_baik" in predicted_class else "Buruk",
-                fabric_info=fabric,
-                model_used=model_used,
-                history_id=h.id,
-            )
-        )
+        results.append(ClassificationResult(
+            predicted_class=predicted_class,
+            confidence=confidence,
+            quality="Baik" if "_baik" in predicted_class else "Buruk",
+            fabric_info=fabric,
+            model_used=model_used,
+            history_id=h.id,
+        ))
 
-    return BulkClassificationResult(
-        batch_id=batch_id,
-        total=len(results),
-        results=results,
-        rejected=rejected,
-        rejected_count=len(rejected),
-    )
+    return BulkClassificationResult(batch_id=batch_id, total=len(results), results=results, rejected=rejected, rejected_count=len(rejected))
