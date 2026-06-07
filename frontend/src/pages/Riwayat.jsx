@@ -105,8 +105,11 @@ export default function Riwayat() {
               const name = h.fabric_type?.name || CLASS_DISPLAY[h.predicted_class] || h.predicted_class
               const quality = h.predicted_class?.includes('_baik') ? 'Baik' : 'Buruk'
               const conf = h.confidence ? Math.round(h.confidence * 100) : '-'
-              const imageUrl = h.image_url || (h.image_filename ? `/uploads/${h.image_filename}` : null)
-              
+              const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+              const imageUrl = h.image_url
+                ? (h.image_url.startsWith('http') ? h.image_url : `${BASE_URL}${h.image_url}`)
+                : (h.image_filename ? `${BASE_URL}/uploads/${h.image_filename}` : null)
+                
               return (
                 <div className="riwayat-item" key={h.id}>
                   <div className="riwayat-left">
