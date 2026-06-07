@@ -110,6 +110,8 @@ export default function Riwayat() {
                 ? (h.image_url.startsWith('http') ? h.image_url : `${BASE_URL}${h.image_url}`)
                 : (h.image_filename ? `${BASE_URL}/uploads/${h.image_filename}` : null)
                 
+              console.log('imageUrl:', imageUrl)
+
               return (
                 <div className="riwayat-item" key={h.id}>
                   <div className="riwayat-left">
