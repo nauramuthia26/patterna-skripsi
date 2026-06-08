@@ -40,6 +40,14 @@ export default function Deteksi() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem('deteksi_result')
+    const savedUserId = sessionStorage.getItem('deteksi_user_id')
+    const currentUserId = user?.id ? String(user.id) : 'guest'
+
+    if (savedUserId && savedUserId !== currentUserId) {
+      sessionStorage.removeItem('deteksi_result')
+      sessionStorage.removeItem('deteksi_user_id')
+      return
+    }
 
     if (saved) {
       try {
@@ -67,11 +75,11 @@ export default function Deteksi() {
     setError(null)
     setLoading(false)
     sessionStorage.removeItem('deteksi_result')
+    sessionStorage.removeItem('deteksi_user_id')
   }, [previews])
 
   useEffect(() => {
     const handleReset = () => reset()
-
     window.addEventListener('reset-deteksi', handleReset)
     return () => window.removeEventListener('reset-deteksi', handleReset)
   }, [reset])
@@ -92,12 +100,12 @@ export default function Deteksi() {
     setResult(null)
     setBulkResult(null)
     sessionStorage.removeItem('deteksi_result')
+    sessionStorage.removeItem('deteksi_user_id')
 
     if (autoCategory === 'umum') {
       previews.forEach(url => {
         if (url) URL.revokeObjectURL(url)
       })
-
       setFiles([accepted[0]])
       setPreviews([URL.createObjectURL(accepted[0])])
     } else {
@@ -115,13 +123,13 @@ export default function Deteksi() {
 
   const removeFile = (idx) => {
     if (previews[idx]) URL.revokeObjectURL(previews[idx])
-
     setFiles(p => p.filter((_, i) => i !== idx))
     setPreviews(p => p.filter((_, i) => i !== idx))
     setResult(null)
     setBulkResult(null)
     setError(null)
     sessionStorage.removeItem('deteksi_result')
+    sessionStorage.removeItem('deteksi_user_id')
   }
 
   const openCamera = async () => {
@@ -154,12 +162,12 @@ export default function Deteksi() {
       setResult(null)
       setBulkResult(null)
       sessionStorage.removeItem('deteksi_result')
+      sessionStorage.removeItem('deteksi_user_id')
 
       if (autoCategory === 'umum') {
         previews.forEach(prevUrl => {
           if (prevUrl) URL.revokeObjectURL(prevUrl)
         })
-
         setFiles([file])
         setPreviews([url])
       } else {
@@ -183,24 +191,25 @@ export default function Deteksi() {
     setResult(null)
     setBulkResult(null)
 
+    const currentUserId = user?.id ? String(user.id) : 'guest'
+
     try {
       if (autoCategory === 'umum') {
         const res = await classifyAPI.umum(files[0])
         setResult(res.data)
-
+        sessionStorage.setItem('deteksi_user_id', currentUserId)
         sessionStorage.setItem('deteksi_result', JSON.stringify({
           result: res.data,
           bulkResult: null,
           error: null
         }))
-
         if (!token) {
           toast('💡 Login untuk menyimpan riwayat', { duration: 3000 })
         }
       } else {
         const res = await classifyAPI.konveksi(files)
         setBulkResult(res.data)
-
+        sessionStorage.setItem('deteksi_user_id', currentUserId)
         sessionStorage.setItem('deteksi_result', JSON.stringify({
           result: null,
           bulkResult: res.data,
@@ -214,20 +223,16 @@ export default function Deteksi() {
       if (status === 422) {
         const errObj = { type: 'low_confidence', message: msg }
         setError(errObj)
-
+        sessionStorage.setItem('deteksi_user_id', currentUserId)
         sessionStorage.setItem('deteksi_result', JSON.stringify({
-          result: null,
-          bulkResult: null,
-          error: errObj
+          result: null, bulkResult: null, error: errObj
         }))
       } else if (status === 503) {
         const errObj = { type: 'no_model', message: msg }
         setError(errObj)
-
+        sessionStorage.setItem('deteksi_user_id', currentUserId)
         sessionStorage.setItem('deteksi_result', JSON.stringify({
-          result: null,
-          bulkResult: null,
-          error: errObj
+          result: null, bulkResult: null, error: errObj
         }))
       } else if (status === 401 || status === 403) {
         toast.error(msg)
@@ -250,7 +255,6 @@ export default function Deteksi() {
                 ? <><Users size={13} /> Masyarakat Umum</>
                 : <><Factory size={13} /> Skala Konveksi</>}
             </span>
-
             {!token && (
               <button
                 className="btn btn-outline btn-sm konveksi-login-hint"
@@ -306,7 +310,6 @@ export default function Deteksi() {
                   </button>
                 </div>
               ))}
-
               <div {...getRootProps()} className="bulk-thumb add-more">
                 <input {...getInputProps()} />
                 <Upload size={16} />
@@ -344,7 +347,6 @@ export default function Deteksi() {
                 <p>
                   <AlertCircle size={13} /> Gunakan perangkat mobile untuk pengalaman kamera yang lebih baik
                 </p>
-
                 <p>
                   <AlertCircle size={13} /> Login untuk menyimpan riwayat
                 </p>
@@ -383,7 +385,6 @@ export default function Deteksi() {
                   : 'Model Belum Tersedia'}
               </p>
               <p className="error-msg">{error.message}</p>
-
               {error.type === 'low_confidence' && (
                 <ul className="error-tips">
                   <li>Pastikan foto adalah close-up tekstur kain</li>

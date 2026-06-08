@@ -15,6 +15,7 @@ export const useAuthStore = create(
         set({ token: null, user: null })
         // Hapus dari localStorage juga
         localStorage.removeItem('patterna-auth')
+        sessionStorage.removeItem('deteksi_result')
         window.location.href = '/'
       },
 
