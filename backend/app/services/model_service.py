@@ -4,7 +4,7 @@ Model Service — load & jalankan model TensorFlow/Keras.
 Preprocessing pipeline (SAMA dengan training):
   1. Center crop 50%
   2. Resize 224x224
-  3. CLAHE
+  3. CLAHE (opsional, tergantung model)
   4. Brightness normalization
   5. efficientnet_preprocess (untuk EfficientNetB0)
      atau /255.0 (untuk CNN)
@@ -92,6 +92,23 @@ def preprocess_for_efficientnet(image_bytes: bytes) -> np.ndarray:
     return np.expand_dims(arr, axis=0)
 
 
+def preprocess_for_efficientnet_no_clahe(image_bytes: bytes) -> np.ndarray:
+    """
+    Preprocessing untuk EfficientNetB0 TANPA CLAHE — sesuai training:
+    crop → resize → brightness → efficientnet_preprocess
+    """
+    from tensorflow.keras.applications.efficientnet import preprocess_input
+
+    img_bgr = read_image(image_bytes)
+    img = crop_center_texture(img_bgr, 0.5)
+    img = cv2.resize(img, IMG_SIZE, interpolation=cv2.INTER_AREA)
+    img = step3_brightness_norm(img)
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    arr = np.array(img_rgb, dtype=np.float32)
+    arr = preprocess_input(arr)
+    return np.expand_dims(arr, axis=0)
+
+
 def preprocess_for_mobilenet(image_bytes: bytes) -> np.ndarray:
     from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
     img_bgr = read_image(image_bytes)
@@ -118,6 +135,7 @@ def preprocess_for_resnet(image_bytes: bytes) -> np.ndarray:
 
 PREPROCESS_FN = {
     "efficientnetb0": preprocess_for_efficientnet,
+    "efficientnetb0_noclahe": preprocess_for_efficientnet_no_clahe,
     "mobilenetv2":    preprocess_for_mobilenet,
     "resnet50":       preprocess_for_resnet,
 }
@@ -168,6 +186,7 @@ def _find_model_file(label: str) -> Optional[str]:
     base = get_model_dir()
     name_map = {
         "efficientnetb0": ["EfficientNetB0_best", "efficientnetb0"],
+        "efficientnetb0_noclahe": ["EfficientNetB0_NoCLAHE_best", "efficientnetb0_noclahe"],
         "mobilenetv2":    ["MobileNetV2_best",    "mobilenetv2"],
         "resnet50":       ["ResNet50_best",        "resnet50"],
     }
@@ -182,7 +201,7 @@ def _find_model_file(label: str) -> Optional[str]:
 
 def _find_any_model() -> Tuple[Optional[str], Optional[str]]:
     """Cari model apapun yang tersedia, return (path, label)."""
-    for label in ["efficientnetb0", "mobilenetv2", "resnet50"]:
+    for label in ["efficientnetb0", "efficientnetb0_noclahe", "mobilenetv2", "resnet50"]:
         path = _find_model_file(label)
         if path:
             return path, label
